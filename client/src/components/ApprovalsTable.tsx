@@ -1,372 +1,459 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ArrowLeft,
+  Info,
+  Search,
+  Filter,
+  Layers,
   Folder,
   Video,
   FileText,
   Image as ImageIcon,
-  CheckCircle2,
-  XCircle,
-  Eye,
-  AlertOctagon,
-  Clock,
-  Sparkles,
-  RefreshCw
+  MoreVertical,
+  Check,
+  X as CloseIcon
 } from 'lucide-react';
-import { useApprovalsStore, ApprovalItem } from '../store/useApprovalsStore';
+import { useApprovalsStore } from '../store/useApprovalsStore';
 
 export const ApprovalsTable: React.FC = () => {
   const {
     queue,
-    isLoadingQueue,
     fetchQueue,
-    updateItemStatus,
+    selectedItem,
     setSelectedItem,
     searchFilter,
-    urgencyFilter,
-    setUrgencyFilter,
-    setActiveTab,
-    setAssistantOpen
+    setSearchFilter,
+    updateItemStatus
   } = useApprovalsStore();
+
+  const [viewMode, setViewMode] = useState<'queue' | 'hierarchy'>('queue');
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQueue();
   }, [fetchQueue]);
 
+  // Default select first item if none selected
+  useEffect(() => {
+    if (!selectedItem && queue.length > 0) {
+      setSelectedItem(queue[0]);
+    }
+  }, [queue, selectedItem, setSelectedItem]);
+
   const filteredQueue = queue.filter(item => {
-    const matchesSearch = item.item.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                          item.submittedBy.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                          item.type.toLowerCase().includes(searchFilter.toLowerCase());
-    const matchesUrgency = urgencyFilter === 'ALL' || item.urgency === urgencyFilter;
-    return matchesSearch && matchesUrgency;
+    return item.item.toLowerCase().includes(searchFilter.toLowerCase()) ||
+           item.submittedBy.toLowerCase().includes(searchFilter.toLowerCase()) ||
+           item.type.toLowerCase().includes(searchFilter.toLowerCase());
   });
+
+  const getSubPath = (item: string) => {
+    if (item.includes('Site Patrol')) return 'My Site Patrol › My Site Patrol Card';
+    if (item.includes('Drone Patrol')) return 'Drawing-Videos › Drawing-Videos Card';
+    if (item.includes('Safety Equipment')) return 'Site Recordings › Site Recordings';
+    return 'Site Recordings › Site Recordings';
+  };
 
   const getItemIcon = (type: string) => {
     switch (type) {
-      case 'Folder': return <Folder size={18} color="#60A5FA" />;
-      case 'Video': return <Video size={18} color="#F87171" />;
-      case 'PDF': return <FileText size={18} color="#FBBF24" />;
-      case 'Image': return <ImageIcon size={18} color="#34D399" />;
-      default: return <FileText size={18} color="#94A3B8" />;
+      case 'Folder':
+        return (
+          <div style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            backgroundColor: '#FEF3C7',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Folder size={16} color="#D97706" />
+          </div>
+        );
+      case 'Video':
+        return (
+          <div style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            backgroundColor: '#FEE2E2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Video size={16} color="#DC2626" />
+          </div>
+        );
+      case 'PDF':
+        return (
+          <div style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            backgroundColor: '#EFF6FF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <FileText size={16} color="#2563EB" />
+          </div>
+        );
+      case 'Image':
+        return (
+          <div style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            backgroundColor: '#ECFDF5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <ImageIcon size={16} color="#059669" />
+          </div>
+        );
+      default:
+        return <Folder size={16} color="#64748B" />;
     }
   };
 
   const pendingCount = queue.filter(q => q.status === 'Pending Review').length;
-  const criticalCount = queue.filter(q => q.status === 'Pending Review' && q.urgency === 'CRITICAL').length;
-  const approvedCount = queue.filter(q => q.status === 'Approved').length;
 
   return (
-    <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>
-      {/* Title & Quick Stats Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#F8FAFC' }}>
-              Approvals & Review
-            </h1>
-            <span style={{
-              background: 'rgba(0, 240, 255, 0.12)',
-              color: 'var(--accent-cyan)',
-              border: '1px solid rgba(0, 240, 255, 0.3)',
-              borderRadius: 'var(--radius-full)',
-              padding: '2px 10px',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {pendingCount} PENDING
-            </span>
-            <button
-              onClick={() => fetchQueue()}
-              className="btn-icon"
-              title="Refresh Queue"
-            >
-              <RefreshCw size={15} className={isLoadingQueue ? 'animate-spin' : ''} />
-            </button>
-          </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Evaluate and verify operational digital-twin assets, telemetry streams, and compliance specifications.
-          </p>
-        </div>
-
-        {/* Action button to open AI Copilot */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* 1. Header Row: Back to Dashboard + Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <button
-          onClick={() => {
-            setAssistantOpen(true);
-            setActiveTab('summary');
-          }}
-          className="btn-primary"
-          style={{ padding: '9px 18px' }}
+          className="btn-pill-ghost"
+          onClick={() => {}}
+          title="Back to digital twin overview"
         >
-          <Sparkles size={16} />
-          <span>Present AI Summary</span>
+          <ArrowLeft size={14} />
+          <span>Back to Dashboard</span>
         </button>
-      </div>
 
-      {/* KPI Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div className="glass-panel" style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>
-            <span>PENDING REVIEW</span>
-            <Clock size={16} color="var(--accent-amber)" />
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px', color: '#F8FAFC' }}>
-            {pendingCount}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', marginTop: '4px' }}>
-            Active turnaround gate
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '16px', borderColor: criticalCount > 0 ? 'rgba(239, 68, 68, 0.4)' : 'var(--border-subtle)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>
-            <span>CRITICAL RISKS</span>
-            <AlertOctagon size={16} color="var(--accent-rose)" />
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px', color: criticalCount > 0 ? 'var(--accent-rose)' : '#F8FAFC' }}>
-            {criticalCount}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: criticalCount > 0 ? '#FCA5A5' : 'var(--text-muted)', marginTop: '4px' }}>
-            {criticalCount > 0 ? 'Requires immediate gate action' : 'No critical alerts'}
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>
-            <span>APPROVED</span>
-            <CheckCircle2 size={16} color="var(--accent-emerald)" />
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px', color: '#F8FAFC' }}>
-            {approvedCount}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-emerald)', marginTop: '4px' }}>
-            Committed to live twin
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>
-            <span>SOP GOVERNANCE</span>
-            <Sparkles size={16} color="var(--accent-cyan)" />
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '8px', color: 'var(--accent-cyan)' }}>
-            SOP 101-105
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Grounded RAG active
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h1 style={{
+            fontSize: '1.25rem',
+            fontWeight: 700,
+            color: '#0F172A',
+            letterSpacing: '-0.01em'
+          }}>
+            Approvals & Review
+          </h1>
+          <button style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}>
+            <Info size={17} />
+          </button>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map(level => (
+      {/* 2. Global Search Input Bar */}
+      <div style={{ position: 'relative', width: '100%' }}>
+        <Search
+          size={16}
+          color="#94A3B8"
+          style={{ position: 'absolute', left: '14px', top: '12px' }}
+        />
+        <input
+          type="text"
+          placeholder="Search approvals by title, author, folder, or page..."
+          value={searchFilter}
+          onChange={(e) => setSearchFilter(e.target.value)}
+          style={{
+            width: '100%',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '10px',
+            padding: '10px 16px 10px 40px',
+            fontSize: '0.85rem',
+            color: '#0F172A',
+            outline: 'none',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            transition: 'border-color 0.2s'
+          }}
+          onFocus={(e) => e.target.style.borderColor = '#8B5CF6'}
+          onBlur={(e) => e.target.style.borderColor = '#E2E8F0'}
+        />
+      </div>
+
+      {/* 3. Approvals Table Card */}
+      <div className="dashboard-card" style={{ overflow: 'hidden' }}>
+        {/* Table Top Toolbar */}
+        <div style={{
+          padding: '14px 20px',
+          borderBottom: '1px solid #E2E8F0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: '#FFFFFF'
+        }}>
+          {/* Left Title + Items Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#8B5CF6' }}>
+              <Filter size={15} />
+            </div>
+            <span style={{
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              color: '#0F172A',
+              textTransform: 'uppercase'
+            }}>
+              Pending Approval Requests
+            </span>
+            <span style={{
+              backgroundColor: '#EFF6FF',
+              color: '#2563EB',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '9999px',
+              border: '1px solid #DBEAFE'
+            }}>
+              {pendingCount} items
+            </span>
+          </div>
+
+          {/* Right View Switcher (Queue View vs Hierarchy View) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button
-              key={level}
-              onClick={() => setUrgencyFilter(level)}
+              onClick={() => setViewMode('queue')}
               style={{
-                background: urgencyFilter === level ? 'rgba(0, 240, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                color: urgencyFilter === level ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                border: `1px solid ${urgencyFilter === level ? 'var(--accent-cyan)' : 'var(--border-subtle)'}`,
-                padding: '5px 12px',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.78rem',
+                backgroundColor: viewMode === 'queue' ? '#F1F5F9' : 'transparent',
+                color: viewMode === 'queue' ? '#0F172A' : '#64748B',
+                border: viewMode === 'queue' ? '1px solid #CBD5E1' : '1px solid transparent',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '0.75rem',
                 fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
                 cursor: 'pointer'
               }}
             >
-              {level === 'ALL' ? 'All Urgencies' : `${level}`}
+              <div style={{
+                width: '12px',
+                height: '8px',
+                borderTop: '2px solid currentColor',
+                borderBottom: '2px solid currentColor'
+              }} />
+              <span>Queue View</span>
             </button>
-          ))}
+
+            <button
+              onClick={() => setViewMode('hierarchy')}
+              style={{
+                backgroundColor: viewMode === 'hierarchy' ? '#F1F5F9' : 'transparent',
+                color: viewMode === 'hierarchy' ? '#0F172A' : '#64748B',
+                border: viewMode === 'hierarchy' ? '1px solid #CBD5E1' : '1px solid transparent',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              <Layers size={13} />
+              <span>Hierarchy View</span>
+            </button>
+          </div>
         </div>
 
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          Showing {filteredQueue.length} of {queue.length} items
-        </span>
-      </div>
+        {/* Table Head & Body */}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <thead>
+              <tr style={{
+                borderBottom: '1px solid #E2E8F0',
+                color: '#64748B',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                backgroundColor: '#F8FAFC'
+              }}>
+                <th style={{ padding: '12px 20px', width: '38%' }}>Folder / Content Name</th>
+                <th style={{ padding: '12px 14px' }}>Type</th>
+                <th style={{ padding: '12px 14px' }}>Submitted By</th>
+                <th style={{ padding: '12px 14px' }}>Date</th>
+                <th style={{ padding: '12px 14px' }}>Status</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredQueue.map(item => {
+                const isSelected = selectedItem?.id === item.id;
+                const isPending = item.status === 'Pending Review';
 
-      {/* Approvals Table */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-          <thead>
-            <tr style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              borderBottom: '1px solid var(--border-subtle)',
-              color: 'var(--text-muted)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase'
-            }}>
-              <th style={{ padding: '14px 20px' }}>Item Name</th>
-              <th style={{ padding: '14px 16px' }}>Type</th>
-              <th style={{ padding: '14px 16px' }}>Submitted By</th>
-              <th style={{ padding: '14px 16px' }}>Status</th>
-              <th style={{ padding: '14px 16px' }}>Urgency</th>
-              <th style={{ padding: '14px 20px', textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredQueue.map(item => {
-              const isApproved = item.status === 'Approved';
-              const isRejected = item.status === 'Rejected';
-              const isCritical = item.urgency === 'CRITICAL';
-
-              return (
-                <tr
-                  key={item.id}
-                  onClick={() => setSelectedItem(item)}
-                  style={{
-                    borderBottom: '1px solid var(--border-subtle)',
-                    backgroundColor: isCritical && item.status === 'Pending Review'
-                      ? 'rgba(239, 68, 68, 0.05)'
-                      : 'transparent',
-                    cursor: 'pointer',
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isCritical && item.status === 'Pending Review'
-                      ? 'rgba(239, 68, 68, 0.05)'
-                      : 'transparent';
-                  }}
-                >
-                  {/* Item Name & Details */}
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '34px',
-                        height: '34px',
-                        borderRadius: '8px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
+                return (
+                  <tr
+                    key={item.id}
+                    onClick={() => setSelectedItem(item)}
+                    style={{
+                      borderBottom: '1px solid #F1F5F9',
+                      backgroundColor: isSelected ? '#FAF5FF' : '#FFFFFF',
+                      cursor: 'pointer',
+                      borderLeft: isSelected ? '4px solid #8B5CF6' : '4px solid transparent',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.backgroundColor = '#FFFFFF';
+                    }}
+                  >
+                    {/* Item Name & Folder Path */}
+                    <td style={{ padding: '14px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {getItemIcon(item.type)}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {item.item}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            fontWeight: 600,
+                            color: '#0F172A',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '240px'
+                          }}>
+                            {item.item}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
+                            {getSubPath(item.item)}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', maxWidth: '380px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.summary}
-                        </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Type */}
-                  <td style={{ padding: '16px 16px', color: 'var(--text-secondary)' }}>
-                    <span style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      padding: '3px 8px',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '0.75rem',
-                      fontFamily: 'var(--font-mono)'
-                    }}>
-                      {item.type}
-                    </span>
-                  </td>
-
-                  {/* Submitted By */}
-                  <td style={{ padding: '16px 16px' }}>
-                    <div style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{item.submittedBy}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Sep 18, 2026</div>
-                  </td>
-
-                  {/* Status */}
-                  <td style={{ padding: '16px 16px' }}>
-                    {isApproved ? (
-                      <span className="badge badge-approved">
-                        <CheckCircle2 size={12} /> Approved
+                    {/* Type Badge with subtle outline */}
+                    <td style={{ padding: '14px 14px' }}>
+                      <span className="pill-badge badge-type">
+                        {item.type === 'Folder' && <Folder size={11} />}
+                        {item.type === 'Video' && <Video size={11} />}
+                        {item.type === 'PDF' && <FileText size={11} />}
+                        {item.type === 'Image' && <ImageIcon size={11} />}
+                        <span>{item.type === 'PDF' ? 'Pdf' : item.type}</span>
                       </span>
-                    ) : isRejected ? (
-                      <span className="badge badge-rejected">
-                        <XCircle size={12} /> Rejected
-                      </span>
-                    ) : (
-                      <span className="badge badge-amber">
-                        <Clock size={12} /> Pending Review
-                      </span>
-                    )}
-                  </td>
+                    </td>
 
-                  {/* Urgency */}
-                  <td style={{ padding: '16px 16px' }}>
-                    {item.urgency === 'CRITICAL' && (
-                      <span className="badge badge-critical">
-                        <AlertOctagon size={12} /> Critical
-                      </span>
-                    )}
-                    {item.urgency === 'HIGH' && (
-                      <span className="badge badge-high">High</span>
-                    )}
-                    {item.urgency === 'MEDIUM' && (
-                      <span className="badge badge-medium">Medium</span>
-                    )}
-                  </td>
+                    {/* Submitter */}
+                    <td style={{ padding: '14px 14px', color: '#334155', fontWeight: 500 }}>
+                      {item.submittedBy}
+                    </td>
 
-                  {/* Actions */}
-                  <td style={{ padding: '16px 20px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Date */}
+                    <td style={{ padding: '14px 14px', color: '#64748B', fontSize: '0.75rem' }}>
+                      Sep 18
+                    </td>
+
+                    {/* Status Badge */}
+                    <td style={{ padding: '14px 14px' }}>
+                      {isPending ? (
+                        <span className="pill-badge badge-pending">
+                          Pending Review
+                        </span>
+                      ) : item.status === 'Approved' ? (
+                        <span className="pill-badge badge-approved">
+                          Approved
+                        </span>
+                      ) : (
+                        <span className="pill-badge badge-rejected">
+                          Rejected
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Actions Menu */}
+                    <td
+                      style={{ padding: '14px 16px', textAlign: 'right', position: 'relative' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
-                        onClick={() => setSelectedItem(item)}
-                        className="btn-ghost"
-                        style={{ padding: '5px 10px', fontSize: '0.75rem' }}
-                        title="Inspect asset details"
+                        onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
+                        className="btn-icon-subtle"
+                        style={{ padding: '4px' }}
+                        title="Row Actions"
                       >
-                        <Eye size={13} />
-                        <span>Inspect</span>
+                        <MoreVertical size={16} />
                       </button>
 
-                      {item.status === 'Pending Review' && (
-                        <>
+                      {/* Dropdown Menu */}
+                      {activeMenuId === item.id && (
+                        <div style={{
+                          position: 'absolute',
+                          right: '16px',
+                          top: '40px',
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '8px',
+                          boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                          padding: '6px',
+                          width: '140px',
+                          zIndex: 30,
+                          textAlign: 'left'
+                        }}>
                           <button
-                            onClick={() => updateItemStatus(item.id, 'Approved', 'Quick approved via queue row')}
-                            className="btn-ghost"
-                            style={{
-                              padding: '5px 10px',
-                              fontSize: '0.75rem',
-                              borderColor: 'rgba(16, 185, 129, 0.4)',
-                              color: 'var(--accent-emerald)'
+                            onClick={() => {
+                              updateItemStatus(item.id, 'Approved', 'Approved via table menu');
+                              setActiveMenuId(null);
                             }}
-                            title="Approve asset"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              border: 'none',
+                              background: 'transparent',
+                              borderRadius: '4px',
+                              color: '#059669',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
                           >
-                            <CheckCircle2 size={13} />
-                            <span>Approve</span>
+                            <Check size={13} />
+                            <span>Approve Asset</span>
                           </button>
-
                           <button
-                            onClick={() => updateItemStatus(item.id, 'Rejected', 'Rejected pending SOP revisions')}
-                            className="btn-ghost"
-                            style={{
-                              padding: '5px 10px',
-                              fontSize: '0.75rem',
-                              borderColor: 'rgba(239, 68, 68, 0.4)',
-                              color: 'var(--accent-rose)'
+                            onClick={() => {
+                              updateItemStatus(item.id, 'Rejected', 'Rejected per SOP audit');
+                              setActiveMenuId(null);
                             }}
-                            title="Reject asset"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              border: 'none',
+                              background: 'transparent',
+                              borderRadius: '4px',
+                              color: '#DC2626',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
                           >
-                            <XCircle size={13} />
-                            <span>Reject</span>
+                            <CloseIcon size={13} />
+                            <span>Reject Asset</span>
                           </button>
-                        </>
+                        </div>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

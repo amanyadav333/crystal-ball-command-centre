@@ -1,182 +1,128 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Boxes,
+  History,
+  RotateCw,
+  Maximize2,
+  MessageSquare,
+  Users,
+  Settings,
   Bell,
-  Search,
-  Activity,
-  ShieldCheck,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { useApprovalsStore } from '../store/useApprovalsStore';
 
 export const DashboardHeader: React.FC = () => {
   const {
-    searchFilter,
-    setSearchFilter,
     simulateTimeout,
     setSimulateTimeout,
     simulateError,
     setSimulateError,
-    resetAll
+    resetAll,
+    fetchQueue,
+    fetchGreeting,
+    setAssistantOpen,
+    setActiveTab
   } = useApprovalsStore();
+
+  const [showSimMenu, setShowSimMenu] = useState(false);
 
   return (
     <header style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '12px 24px',
-      backgroundColor: 'var(--bg-secondary)',
-      borderBottom: '1px solid var(--border-subtle)',
+      padding: '0 24px',
+      height: '62px',
+      backgroundColor: '#FFFFFF',
+      borderBottom: '1px solid #E2E8F0',
       position: 'sticky',
       top: 0,
       zIndex: 40
     }}>
-      {/* Brand & Digital Twin Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #00F0FF 0%, #3B82F6 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 15px rgba(0, 240, 255, 0.4)'
-          }}>
-            <Boxes size={22} color="#0B0F19" />
-          </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', color: '#F8FAFC' }}>
-              OomniEye
-            </div>
-            <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-cyan)', fontWeight: 600 }}>
-              Digital Twin Solutions
-            </div>
-          </div>
-        </div>
-
-        {/* Live Telemetry Status Pill */}
+      {/* Brand: OomniEye DIGITAL TWIN SOLUTIONS */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid var(--border-subtle)',
-          padding: '4px 12px',
-          borderRadius: 'var(--radius-full)',
-          fontSize: '0.75rem',
-          color: 'var(--text-secondary)'
+          fontSize: '1.25rem',
+          fontWeight: 800,
+          color: '#0C1838',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1
         }}>
-          <div className="pulse-beacon" />
-          <span>Spatial Twin Engine: <strong>Sync Active (12 Nodes)</strong></span>
+          OomniEye
+        </div>
+        <div style={{
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          color: '#64748B',
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          marginTop: '2px'
+        }}>
+          Digital Twin Solutions
         </div>
       </div>
 
-      {/* Global Search Bar */}
-      <div style={{
-        position: 'relative',
-        width: '380px'
-      }}>
-        <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '10px' }} />
-        <input
-          type="text"
-          placeholder="Search approvals by title, author, folder, or page..."
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          style={{
-            width: '100%',
-            backgroundColor: 'var(--bg-input)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-full)',
-            padding: '8px 16px 8px 36px',
-            color: 'var(--text-primary)',
-            fontSize: '0.85rem',
-            outline: 'none',
-            transition: 'border-color 0.2s'
-          }}
-          onFocus={(e) => e.target.style.borderColor = 'var(--accent-cyan)'}
-          onBlur={(e) => e.target.style.borderColor = 'var(--border-subtle)'}
-        />
-      </div>
-
-      {/* Evaluator Controls & Profile */}
+      {/* Right Toolbar Actions matching reference screenshot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Reviewer Simulation Toolbar (for testing 8s timeout & graceful degradation) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          padding: '4px 8px',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid rgba(255, 255, 255, 0.05)'
-        }}>
-          <button
-            onClick={() => setSimulateTimeout(!simulateTimeout)}
-            title="Simulate 8-Second LLM Timeout to verify fallback handling"
-            style={{
-              background: simulateTimeout ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
-              color: simulateTimeout ? '#FCD34D' : 'var(--text-muted)',
-              border: `1px solid ${simulateTimeout ? 'rgba(245, 158, 11, 0.5)' : 'transparent'}`,
-              borderRadius: 'var(--radius-sm)',
-              padding: '3px 8px',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <AlertTriangle size={12} />
-            {simulateTimeout ? 'Timeout Simulated (>8s)' : 'Simulate Timeout'}
-          </button>
+        {/* Tool Icons: History, Refresh, Maximize, Message */}
+        <button
+          className="btn-icon-subtle"
+          title="Audit History"
+          onClick={() => fetchGreeting()}
+        >
+          <History size={18} />
+        </button>
 
-          <button
-            onClick={() => setSimulateError(!simulateError)}
-            title="Simulate LLM Provider Offline / Missing API Key"
-            style={{
-              background: simulateError ? 'rgba(239, 68, 68, 0.25)' : 'transparent',
-              color: simulateError ? '#FCA5A5' : 'var(--text-muted)',
-              border: `1px solid ${simulateError ? 'rgba(239, 68, 68, 0.5)' : 'transparent'}`,
-              borderRadius: 'var(--radius-sm)',
-              padding: '3px 8px',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            {simulateError ? 'LLM Offline (Simulated)' : 'Simulate LLM Down'}
-          </button>
+        <button
+          className="btn-icon-subtle"
+          title="Refresh Queue"
+          onClick={() => {
+            fetchQueue();
+            fetchGreeting();
+          }}
+        >
+          <RotateCw size={18} />
+        </button>
 
-          <button
-            onClick={() => resetAll()}
-            title="Reset queue and assistant state to default mock dataset"
-            style={{
-              background: 'transparent',
-              color: 'var(--text-muted)',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px'
-            }}
-          >
-            <RotateCcw size={14} />
-          </button>
-        </div>
+        <button
+          className="btn-icon-subtle"
+          title="Toggle Fullscreen"
+          onClick={() => {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen?.();
+            } else {
+              document.exitFullscreen?.();
+            }
+          }}
+        >
+          <Maximize2 size={17} />
+        </button>
 
-        {/* Notifications */}
-        <div style={{ position: 'relative', cursor: 'pointer' }}>
-          <Bell size={18} color="var(--text-secondary)" />
+        <button
+          className="btn-icon-subtle"
+          title="Live Discussion"
+          onClick={() => {
+            setAssistantOpen(true);
+            setActiveTab('chat');
+          }}
+        >
+          <MessageSquare size={18} />
+        </button>
+
+        {/* Collaboration icon with badge 3 */}
+        <div style={{ position: 'relative', cursor: 'pointer' }} title="Active Operators (3 Online)">
+          <button className="btn-icon-subtle" style={{ padding: '6px' }}>
+            <Users size={19} />
+          </button>
           <span style={{
             position: 'absolute',
-            top: '-5px',
-            right: '-5px',
-            backgroundColor: 'var(--accent-cyan)',
-            color: '#000',
-            fontSize: '0.65rem',
+            top: '0',
+            right: '0',
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            fontSize: '0.62rem',
             fontWeight: 800,
             width: '15px',
             height: '15px',
@@ -184,49 +130,167 @@ export const DashboardHeader: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
-          }}>3</span>
+          }}>
+            3
+          </span>
         </div>
 
-        {/* Operator Profile */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '8px', borderLeft: '1px solid var(--border-subtle)' }}>
-          <div style={{
+        <button className="btn-icon-subtle" title="Settings">
+          <Settings size={18} />
+        </button>
+
+        {/* Notification Bell with red alert dot */}
+        <div style={{ position: 'relative', cursor: 'pointer' }} title="Pending Alerts">
+          <button className="btn-icon-subtle" style={{ padding: '6px' }}>
+            <Bell size={18} />
+          </button>
+          <span style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            backgroundColor: '#EF4444',
+            width: '7px',
+            height: '7px',
+            borderRadius: '50%',
+            boxShadow: '0 0 4px #EF4444'
+          }} />
+        </div>
+
+        {/* Evaluator Simulation Menu Trigger */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowSimMenu(!showSimMenu)}
+            style={{
+              backgroundColor: simulateTimeout || simulateError ? '#FEF3C7' : '#F1F5F9',
+              color: simulateTimeout || simulateError ? '#92400E' : '#475569',
+              border: `1px solid ${simulateTimeout || simulateError ? '#F59E0B' : '#E2E8F0'}`,
+              borderRadius: 'var(--radius-sm)',
+              padding: '4px 8px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            title="Evaluator Failure Simulation Controls (§6)"
+          >
+            <AlertTriangle size={12} color={simulateTimeout || simulateError ? '#D97706' : '#64748B'} />
+            <span>{simulateTimeout ? 'Timeout Mode' : simulateError ? 'LLM Down' : 'Simulate'}</span>
+          </button>
+
+          {showSimMenu && (
+            <div style={{
+              position: 'absolute',
+              top: '34px',
+              right: 0,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              padding: '8px',
+              width: '210px',
+              zIndex: 50,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', padding: '2px 4px' }}>
+                JD Failure Tests (§6)
+              </div>
+              <button
+                onClick={() => {
+                  setSimulateTimeout(!simulateTimeout);
+                  setShowSimMenu(false);
+                }}
+                style={{
+                  textAlign: 'left',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: simulateTimeout ? '#FEF3C7' : 'transparent',
+                  color: simulateTimeout ? '#92400E' : '#334155',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                {simulateTimeout ? '✓ Timeout (>8s) Active' : 'Simulate 8s Timeout'}
+              </button>
+              <button
+                onClick={() => {
+                  setSimulateError(!simulateError);
+                  setShowSimMenu(false);
+                }}
+                style={{
+                  textAlign: 'left',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: simulateError ? '#FEE2E2' : 'transparent',
+                  color: simulateError ? '#991B1B' : '#334155',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                {simulateError ? '✓ LLM Offline Active' : 'Simulate LLM Offline'}
+              </button>
+              <button
+                onClick={() => {
+                  resetAll();
+                  setShowSimMenu(false);
+                }}
+                style={{
+                  textAlign: 'left',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  color: '#64748B',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <RotateCcw size={12} />
+                <span>Reset to Seed Data</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* User Profile Avatar with letter 'R' */}
+        <div
+          style={{
             width: '32px',
             height: '32px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #10B981, #065F46)',
+            backgroundColor: '#F59E0B',
+            color: '#FFFFFF',
+            fontWeight: 700,
+            fontSize: '0.88rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '0.8rem',
-            color: '#fff',
-            border: '2px solid rgba(16, 185, 129, 0.4)'
-          }}>
-            AY
-          </div>
-          <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>Aman Yadav</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Lead Inspector</div>
-          </div>
+            boxShadow: '0 2px 6px rgba(245, 158, 11, 0.35)',
+            cursor: 'pointer'
+          }}
+          title="Reviewer Profile (R)"
+        >
+          R
         </div>
 
-        {/* + Add help button matching reference product screenshot */}
+        {/* + Add help button (Purple gradient matching screenshot) */}
         <button
-          style={{
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: 'var(--radius-full)',
-            padding: '6px 14px',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)'
+          onClick={() => {
+            setAssistantOpen(true);
+            setActiveTab('help');
           }}
-          title="Add Operational SOP Knowledge Note"
+          className="btn-purple"
+          title="Open SOP Help Guidance"
         >
           <span>+ Add help</span>
         </button>

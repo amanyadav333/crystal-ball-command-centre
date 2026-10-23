@@ -1,76 +1,82 @@
 import React from 'react';
 import {
-  LayoutDashboard,
-  Layers,
-  FileCheck,
-  Cpu,
-  Video,
-  Radio,
-  Sliders,
-  HelpCircle
+  FolderKanban,
+  LayoutGrid,
+  UserCheck,
+  Share2,
+  Ticket,
+  Building2,
+  BarChart3,
+  FlaskConical
 } from 'lucide-react';
 
 export const SidebarNav: React.FC = () => {
   return (
     <aside style={{
-      width: '68px',
-      backgroundColor: 'var(--bg-secondary)',
-      borderRight: '1px solid var(--border-subtle)',
+      width: '58px',
+      backgroundColor: '#FFFFFF',
+      borderRight: '1px solid #E2E8F0',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '20px 0',
-      gap: '24px',
-      height: 'calc(100vh - 61px)'
+      padding: '16px 0',
+      gap: '20px',
+      height: 'calc(100vh - 62px)',
+      flexShrink: 0
     }}>
-      <button className="btn-icon" title="Dashboard Home">
-        <LayoutDashboard size={20} />
+      {/* 1. Project / Layers Icon */}
+      <button className="btn-icon-subtle" title="Projects & Digital Twin Workspaces" style={{ color: '#475569' }}>
+        <FolderKanban size={20} />
       </button>
 
-      <button className="btn-icon" title="Digital Twin Layers">
-        <Layers size={20} />
-      </button>
-
-      {/* Active Tab: Approvals */}
+      {/* 2. Grid Dashboard Icon (Active / Blue) */}
       <button
         style={{
-          width: '42px',
-          height: '42px',
-          borderRadius: '12px',
-          background: 'rgba(0, 240, 255, 0.15)',
-          border: '1px solid var(--accent-cyan)',
-          color: 'var(--accent-cyan)',
+          width: '38px',
+          height: '38px',
+          borderRadius: '10px',
+          backgroundColor: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          color: '#2563EB',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 0 15px rgba(0, 240, 255, 0.25)'
+          cursor: 'pointer'
         }}
-        title="Approvals & Review (Active)"
+        title="Approvals & Review Workspace (Active)"
       >
-        <FileCheck size={22} />
+        <LayoutGrid size={20} />
       </button>
 
-      <button className="btn-icon" title="Autonomous Drone Patrols">
-        <Video size={20} />
+      {/* 3. Humanoid / Field Patrols (Cyan) */}
+      <button className="btn-icon-subtle" title="Field Patrols & Personnel" style={{ color: '#06B6D4' }}>
+        <UserCheck size={20} />
       </button>
 
-      <button className="btn-icon" title="Sensor Mesh Network">
-        <Cpu size={20} />
+      {/* 4. Collaboration Mesh (Pink) */}
+      <button className="btn-icon-subtle" title="Collaboration & Multi-Operator Mesh" style={{ color: '#EC4899' }}>
+        <Share2 size={20} />
       </button>
 
-      <button className="btn-icon" title="Telemetry Feeds">
-        <Radio size={20} />
+      {/* 5. Ticket / SLA Gate (Green) */}
+      <button className="btn-icon-subtle" title="SLA Compliance & Passes" style={{ color: '#10B981' }}>
+        <Ticket size={20} />
       </button>
 
-      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-        <button className="btn-icon" title="System Settings">
-          <Sliders size={20} />
-        </button>
-        <button className="btn-icon" title="Help & Documentation">
-          <HelpCircle size={20} />
-        </button>
-      </div>
+      {/* 6. Warehouse Spatial Model (Amber) */}
+      <button className="btn-icon-subtle" title="Warehouse 3D Digital Model" style={{ color: '#F59E0B' }}>
+        <Building2 size={20} />
+      </button>
+
+      {/* 7. Analytics & Telemetry (Purple) */}
+      <button className="btn-icon-subtle" title="Telemetry Analytics" style={{ color: '#8B5CF6' }}>
+        <BarChart3 size={20} />
+      </button>
+
+      {/* 8. Experimental Labs (Rose) */}
+      <button className="btn-icon-subtle" title="Simulations & Diagnostics" style={{ color: '#F43F5E' }}>
+        <FlaskConical size={20} />
+      </button>
     </aside>
   );
 };
