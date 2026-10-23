@@ -15,6 +15,97 @@ import { ChatService } from '../services/chatService';
 export const aiRouter = Router();
 
 /**
+ * 0. AI STATUS & DIAGNOSTIC ENDPOINT
+ * Checks whether OpenAI, Anthropic, or Gemini API keys are active, valid, and responding
+ */
+aiRouter.get('/ai-status', async (_req: Request, res: Response) => {
+  const openAiKey = process.env.OPENAI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+  if (openAiKey && !openAiKey.startsWith('mock_')) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAiKey}`
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 5
+        })
+      });
+
+      const data = (await response.json()) as any;
+
+      if (response.ok) {
+        res.json({
+          provider: 'OpenAI',
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          status: 'LIVE_AND_CONNECTED',
+          statusCode: 200,
+          message: 'OpenAI API key is valid and returning live completions.',
+          liveResponseSample: data.choices?.[0]?.message?.content?.trim() || 'pong',
+          degradedFallbackActive: false
+        });
+        return;
+      } else {
+        res.json({
+          provider: 'OpenAI',
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          status: 'API_ERROR_OR_QUOTA_EXHAUSTED',
+          statusCode: response.status,
+          errorCode: data.error?.code || data.error?.type || 'unknown_error',
+          errorMessage: data.error?.message || response.statusText,
+          degradedFallbackActive: true,
+          explanation: response.status === 429
+            ? 'Your OpenAI API key has exhausted its credit balance / hit quota limits. The application is running smoothly in Graceful Degradation Fallback Mode.'
+            : 'OpenAI rejected the request. Running in Graceful Degradation Fallback Mode.'
+        });
+        return;
+      }
+    } catch (err: any) {
+      res.json({
+        provider: 'OpenAI',
+        status: 'NETWORK_ERROR',
+        errorMessage: err.message,
+        degradedFallbackActive: true
+      });
+      return;
+    }
+  }
+
+  if (anthropicKey && !anthropicKey.startsWith('mock_')) {
+    res.json({
+      provider: 'Anthropic Claude',
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
+      status: 'KEY_CONFIGURED',
+      degradedFallbackActive: false
+    });
+    return;
+  }
+
+  if (geminiKey && !geminiKey.startsWith('mock_')) {
+    res.json({
+      provider: 'Google Gemini',
+      model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+      status: 'KEY_CONFIGURED',
+      degradedFallbackActive: false
+    });
+    return;
+  }
+
+  res.json({
+    provider: 'None / Heuristic',
+    status: 'NO_EXTERNAL_KEY_CONFIGURED',
+    message: 'Operating in deterministic offline reasoning mode.',
+    degradedFallbackActive: true
+  });
+});
+
+/**
  * 1. REPLAY GREETING
  * Regenerates short, context-aware greeting referencing live queue count
  */
