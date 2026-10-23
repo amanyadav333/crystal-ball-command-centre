@@ -137,6 +137,53 @@ export class LLMService {
       }
     }
 
+    // Check for Google Gemini API Key
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (geminiKey && !geminiKey.startsWith('mock_')) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+              }
+            ],
+            generationConfig: {
+              temperature: options.temperature ?? 0.3
+            }
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = (await response.json()) as any;
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return {
+          rawText: text,
+          isDegraded: false
+        };
+      } catch (err: any) {
+        const isTimeout = err.name === 'AbortError' || err.message?.includes('aborted');
+        return {
+          rawText: '',
+          isDegraded: true,
+          fallbackReason: isTimeout ? 'Gemini call timed out (>8s)' : `Gemini API error: ${err.message}`
+        };
+      }
+    }
+
     // Graceful degradation when no external API key is configured
     return {
       rawText: '',

@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Sparkles,
-  MessageSquare,
-  HelpCircle,
-  GraduationCap,
+  Home,
+  Info,
+  Maximize2,
+  X,
   Volume2,
   VolumeX,
-  X,
   Send,
   RotateCcw,
   CheckCircle,
   AlertTriangle,
   ArrowRight,
-  ShieldAlert,
-  Clock,
-  Layers,
-  ChevronDown
+  ArrowLeft,
+  ExternalLink,
+  Sparkles,
+  HelpCircle,
+  GraduationCap,
+  MessageSquare
 } from 'lucide-react';
 import { useApprovalsStore, AssistantTab } from '../store/useApprovalsStore';
 
@@ -39,12 +40,10 @@ export const ApprovalsAssistantPanel: React.FC = () => {
     askHelpQuestion,
     currentTeachStep,
     teachFollowUps,
-    isTeachCompleted,
     fetchTeachStep,
     queue,
     isLoadingSummary,
     isLoadingGreeting,
-    isLoadingChat,
     isLoadingHelp,
     isLoadingTeach
   } = useApprovalsStore();
@@ -52,6 +51,7 @@ export const ApprovalsAssistantPanel: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [helpInput, setHelpInput] = useState('');
   const [teachQuestion, setTeachQuestion] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Initialize Greeting on mount
@@ -66,8 +66,7 @@ export const ApprovalsAssistantPanel: React.FC = () => {
     }
   }, [chatMessages, streamingTokenBuffer]);
 
-  // Handle Tab Change
-  const handleSelectTab = (tab: AssistantTab) => {
+  const handleSelectCard = (tab: AssistantTab) => {
     setActiveTab(tab);
     if (tab === 'summary' && !summary) {
       fetchSummary();
@@ -100,907 +99,996 @@ export const ApprovalsAssistantPanel: React.FC = () => {
     fetchTeachStep(currentTeachStep?.stepNumber || 1, q);
   };
 
-  // If minimized, show floating pill trigger button
-  if (!isAssistantOpen) {
-    const pendingCount = queue.filter(q => q.status === 'Pending Review').length;
-    return (
-      <button
-        onClick={() => setAssistantOpen(true)}
-        className="glass-panel-glow"
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          padding: '12px 20px',
-          borderRadius: 'var(--radius-full)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          zIndex: 50,
-          border: '1px solid var(--accent-cyan)',
-          boxShadow: '0 8px 32px rgba(0, 240, 255, 0.35)',
-          color: '#F8FAFC'
-        }}
-      >
-        <div style={{ position: 'relative' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #00F0FF, #3B82F6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#07090E',
-            fontWeight: 800
-          }}>
-            <Sparkles size={18} />
-          </div>
-          <div className="pulse-beacon" style={{ position: 'absolute', bottom: 0, right: 0 }} />
-        </div>
-        <div style={{ textAlign: 'left' }}>
-          <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>Approvals Assistant</div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
-            {pendingCount > 0 ? `${pendingCount} items pending` : 'Ready to assist'}
-          </div>
-        </div>
-      </button>
-    );
-  }
+  const pendingCount = queue.filter(q => q.status === 'Pending Review').length;
 
   return (
-    <div
-      className="glass-panel-glow"
-      style={{
+    <>
+      {/* Floating Circular Action Trigger Button in lower-right */}
+      <div style={{
         position: 'fixed',
         bottom: '20px',
         right: '24px',
-        width: '460px',
-        maxWidth: 'calc(100vw - 48px)',
-        height: '620px',
-        maxHeight: 'calc(100vh - 100px)',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 'var(--radius-lg)',
-        zIndex: 50,
-        overflow: 'hidden',
-        animation: 'fadeIn 0.25s ease'
-      }}
-    >
-      {/* 1. Header with Avatar & Controls */}
-      <div style={{
-        padding: '14px 18px',
-        borderBottom: '1px solid var(--border-subtle)',
-        background: 'linear-gradient(180deg, rgba(14, 19, 31, 0.95) 0%, rgba(14, 19, 31, 0.8) 100%)',
-        display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        zIndex: 55
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ position: 'relative' }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #00F0FF 0%, #7928CA 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              boxShadow: '0 0 15px rgba(0, 240, 255, 0.3)'
-            }}>
-              <Sparkles size={20} />
-            </div>
-            <div className="pulse-beacon" style={{ position: 'absolute', bottom: '0', right: '0' }} />
-          </div>
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC' }}>
-                Approvals Assistant
-              </span>
-              <span style={{
-                fontSize: '0.65rem',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                color: '#10B981',
-                padding: '1px 6px',
-                borderRadius: 'var(--radius-full)',
-                fontWeight: 700,
-                border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}>
-                AI COPILOT
-              </span>
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              OomniEye Decision Intelligence
-            </div>
-          </div>
-        </div>
-
-        {/* Header Affordances */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {/* TTS Speech Synthesis Button */}
-          <button
-            onClick={() => toggleSpeech()}
-            className="btn-icon"
-            title={isSpeaking ? 'Mute Speech' : 'Read Summary Out Loud'}
-            style={{ color: isSpeaking ? 'var(--accent-cyan)' : 'var(--text-secondary)' }}
-          >
-            {isSpeaking ? (
-              <div className="audio-waves">
-                <span className="audio-bar" />
-                <span className="audio-bar" />
-                <span className="audio-bar" />
-                <span className="audio-bar" />
-                <span className="audio-bar" />
-              </div>
-            ) : (
-              <Volume2 size={18} />
-            )}
-          </button>
-
-          {/* Close Affordance */}
-          <button
-            onClick={() => setAssistantOpen(false)}
-            className="btn-icon"
-            title="Minimize Assistant"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        <button
+          onClick={() => setAssistantOpen(!isAssistantOpen)}
+          style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#0B1536',
+            border: '2px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 8px 24px rgba(11, 21, 54, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#FFFFFF',
+            transition: 'all 0.2s ease',
+            position: 'relative'
+          }}
+          title={isAssistantOpen ? "Close Approvals Panel" : "Open Approvals Assistant"}
+        >
+          {isAssistantOpen ? (
+            <X size={20} />
+          ) : (
+            <>
+              <img
+                src="/assets/avatar.jpg"
+                alt="Avatar"
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              />
+              {pendingCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  backgroundColor: '#EF4444',
+                  color: '#FFFFFF',
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #0B1536'
+                }}>
+                  {pendingCount}
+                </span>
+              )}
+            </>
+          )}
+        </button>
+        <span style={{
+          fontSize: '0.65rem',
+          fontWeight: 700,
+          color: '#059669',
+          marginTop: '4px',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase'
+        }}>
+          ALL CAD
+        </span>
       </div>
 
-      {/* 2. Dynamic Context-Aware Greeting Banner */}
-      {greeting && (
-        <div style={{
-          padding: '10px 16px',
-          backgroundColor: 'rgba(0, 240, 255, 0.05)',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: '0.78rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
-            <span style={{ color: 'var(--accent-cyan)' }}>👋</span>
-            <span style={{ fontWeight: 500 }}>{greeting.greeting}</span>
+      {/* Main Approvals Panel Popup */}
+      {isAssistantOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '84px',
+            right: '24px',
+            width: isExpanded ? '520px' : '410px',
+            height: isExpanded ? '720px' : '590px',
+            maxWidth: 'calc(100vw - 48px)',
+            maxHeight: 'calc(100vh - 120px)',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 18px 45px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            zIndex: 50,
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          {/* 1. Header Bar (Dark Navy matching reference #0C1838) */}
+          <div style={{
+            backgroundColor: '#0C1838',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: '#FFFFFF'
+          }}>
+            {/* Left: Avatar + Title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                backgroundColor: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <img
+                  src="/assets/avatar.jpg"
+                  alt="Approvals Assistant"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+              <span style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.01em' }}>
+                Approvals
+              </span>
+            </div>
+
+            {/* Right Affordances: Info, Expand, Close */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                onClick={() => toggleSpeech()}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isSpeaking ? '#38BDF8' : '#94A3B8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title={isSpeaking ? "Mute Voice" : "Audio TTS Summary"}
+              >
+                {isSpeaking ? <VolumeX size={17} /> : <Volume2 size={17} />}
+              </button>
+
+              <button
+                style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+                title="About OomniEye Approvals AI"
+              >
+                <Info size={17} />
+              </button>
+
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+                title={isExpanded ? "Collapse View" : "Expand View"}
+              >
+                <Maximize2 size={16} />
+              </button>
+
+              <button
+                onClick={() => setAssistantOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+                title="Minimize Assistant"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={() => fetchGreeting()}
-            className="btn-icon"
-            title="Replay Greeting"
-            style={{ padding: '2px', color: 'var(--text-cyan)' }}
-          >
-            <RotateCcw size={12} className={isLoadingGreeting ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      )}
+          {/* 2. Subheader Bar (Breadcrumb + Replay Greeting) */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #E2E8F0',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            {activeTab === 'overview' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '0.82rem', fontWeight: 600 }}>
+                <Home size={15} color="#64748B" />
+                <span>Approvals</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => setActiveTab('overview')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                <ArrowLeft size={14} />
+                <span>Back to Approvals</span>
+              </button>
+            )}
 
-      {/* 3. Navigation Tabs Bar */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '1px solid var(--border-subtle)',
-        backgroundColor: 'rgba(10, 14, 23, 0.85)',
-        padding: '4px 8px',
-        gap: '4px',
-        overflowX: 'auto'
-      }}>
-        {[
-          { id: 'overview', label: 'Overview', icon: Layers },
-          { id: 'summary', label: 'Summary', icon: Sparkles },
-          { id: 'chat', label: 'Talk to me', icon: MessageSquare },
-          { id: 'help', label: 'Help me', icon: HelpCircle },
-          { id: 'teach', label: 'Teach me', icon: GraduationCap }
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
+            {/* Replay Greeting Orange Action Link */}
             <button
-              key={tab.id}
-              onClick={() => handleSelectTab(tab.id as AssistantTab)}
+              onClick={() => fetchGreeting()}
               style={{
-                background: isActive ? 'rgba(0, 240, 255, 0.12)' : 'transparent',
-                color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                background: 'transparent',
                 border: 'none',
-                borderBottom: isActive ? '2px solid var(--accent-cyan)' : '2px solid transparent',
-                padding: '6px 10px',
-                fontSize: '0.75rem',
+                color: '#D97706',
+                fontSize: '0.82rem',
                 fontWeight: 600,
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s'
+                cursor: 'pointer',
+                padding: '2px 4px'
               }}
+              title="Regenerate context-aware greeting"
             >
-              <Icon size={14} />
-              <span>{tab.label}</span>
+              <RotateCcw size={12} className={isLoadingGreeting ? "animate-spin" : ""} />
+              <span>Replay Greeting</span>
             </button>
-          );
-        })}
-      </div>
-
-      {/* 4. Tab Content Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-
-        {/* ===================== TAB: OVERVIEW (5 ACTION CARDS SPEC) ===================== */}
-        {activeTab === 'overview' && (
-          <div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
-              Select Assistant Capability:
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
-              {/* Card 1: Present me Summary */}
-              <div
-                onClick={() => handleSelectTab('summary')}
-                className="glass-panel"
-                style={{
-                  padding: '14px',
-                  cursor: 'pointer',
-                  border: '1px solid rgba(0, 240, 255, 0.2)',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(0, 240, 255, 0.2)'}
-              >
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(0, 240, 255, 0.1)',
-                  color: 'var(--accent-cyan)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Sparkles size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#F8FAFC' }}>
-                    Present me Summary
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Summarise current pending queue out loud/in text, prioritised by urgency.
-                  </div>
-                </div>
-                <ArrowRight size={16} color="var(--accent-cyan)" />
-              </div>
-
-              {/* Card 2: Talk to me */}
-              <div
-                onClick={() => handleSelectTab('chat')}
-                className="glass-panel"
-                style={{
-                  padding: '14px',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border-subtle)',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-              >
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                  color: '#A78BFA',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <MessageSquare size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#F8FAFC' }}>
-                    Talk to me
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Free-form multi-turn reasoning about which item needs attention first and why.
-                  </div>
-                </div>
-                <ArrowRight size={16} color="var(--text-muted)" />
-              </div>
-
-              {/* Card 3: Help me */}
-              <div
-                onClick={() => handleSelectTab('help')}
-                className="glass-panel"
-                style={{
-                  padding: '14px',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border-subtle)',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-              >
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                  color: '#FCD34D',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <HelpCircle size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#F8FAFC' }}>
-                    Help me
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Answers operational questions strictly grounded in SOP policies (RAG surface).
-                  </div>
-                </div>
-                <ArrowRight size={16} color="var(--text-muted)" />
-              </div>
-
-              {/* Card 4: Teach me */}
-              <div
-                onClick={() => handleSelectTab('teach')}
-                className="glass-panel"
-                style={{
-                  padding: '14px',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border-subtle)',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-              >
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                  color: '#6EE7B7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <GraduationCap size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#F8FAFC' }}>
-                    Teach me
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Walks new operators step-by-step through review actions, adapting to follow-ups.
-                  </div>
-                </div>
-                <ArrowRight size={16} color="var(--text-muted)" />
-              </div>
-
-              {/* Card 5: Replay Greeting */}
-              <div
-                onClick={() => fetchGreeting()}
-                className="glass-panel"
-                style={{
-                  padding: '14px',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border-subtle)',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-              >
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  color: '#F87171',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <RotateCcw size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#F8FAFC' }}>
-                    Replay Greeting
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    Regenerate a short, context-aware greeting reflecting current queue state.
-                  </div>
-                </div>
-                <RotateCcw size={16} color="var(--text-muted)" />
-              </div>
-            </div>
           </div>
-        )}
 
-        {/* ===================== TAB: SUMMARY (STRUCTURED OUTPUT) ===================== */}
-        {activeTab === 'summary' && (
-          <div>
-            {isLoadingSummary ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
-                <Sparkles size={24} className="animate-spin" color="var(--accent-cyan)" />
-                <p style={{ marginTop: '12px', fontSize: '0.85rem' }}>Synthesizing structured urgency summary...</p>
-              </div>
-            ) : summary ? (
-              <div>
-                {/* Fallback Banner if Degraded */}
-                {summary.degraded && (
-                  <div style={{
-                    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '10px 12px',
-                    marginBottom: '14px',
+          {/* Context Greeting Banner */}
+          {greeting && (
+            <div style={{
+              backgroundColor: '#FFFBEB',
+              borderBottom: '1px solid #FEF3C7',
+              padding: '8px 16px',
+              fontSize: '0.75rem',
+              color: '#92400E',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span style={{ fontSize: '0.9rem' }}>💬</span>
+              <span style={{ fontWeight: 500 }}>{greeting.greeting}</span>
+            </div>
+          )}
+
+          {/* 3. Main Content Area */}
+          <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F8FAFC' }}>
+            {/* ==================== 2X2 GRID OVERVIEW MODE (MATCHING SCREENSHOT) ==================== */}
+            {activeTab === 'overview' && (
+              <div style={{
+                padding: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '14px',
+                height: '100%'
+              }}>
+                {/* Card 1: Present me Summary */}
+                <div
+                  onClick={() => handleSelectCard('summary')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    border: '1px solid #E2E8F0',
+                    padding: '16px 12px 14px 12px',
                     display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '8px',
-                    fontSize: '0.75rem',
-                    color: '#FCD34D'
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center',
+                    minHeight: '190px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#94A3B8';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.03)';
+                  }}
+                >
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    borderRadius: '12px'
                   }}>
-                    <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                      <strong>Fallback Mode Active:</strong> {summary.fallbackReason}
-                    </div>
+                    <img
+                      src="/assets/present_summary.jpg"
+                      alt="Present me Summary"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
                   </div>
-                )}
-
-                {/* Headline Banner */}
-                <div style={{
-                  backgroundColor: 'rgba(0, 240, 255, 0.08)',
-                  border: '1px solid var(--border-accent)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '14px',
-                  marginBottom: '14px'
-                }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Prioritized Operational Overview
-                  </div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#F8FAFC', marginTop: '4px' }}>
-                    {summary.headline}
-                  </div>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E293B', marginTop: '8px' }}>
+                    Present me Summary
+                  </span>
                 </div>
 
-                {/* Spoken Script / TTS Audio Card */}
-                <div className="glass-panel" style={{ padding: '12px', marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                      Spoken Script (TTS Audio)
-                    </span>
-                    <button
-                      onClick={() => toggleSpeech(summary.spokenScript)}
-                      className="btn-ghost"
-                      style={{ padding: '3px 8px', fontSize: '0.72rem', color: 'var(--accent-cyan)' }}
-                    >
-                      {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                      <span>{isSpeaking ? 'Stop Audio' : 'Play Audio'}</span>
-                    </button>
+                {/* Card 2: Talk to me */}
+                <div
+                  onClick={() => handleSelectCard('chat')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    border: '1px solid #E2E8F0',
+                    padding: '16px 12px 14px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center',
+                    minHeight: '190px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#94A3B8';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.03)';
+                  }}
+                >
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    borderRadius: '12px'
+                  }}>
+                    <img
+                      src="/assets/talk_to_me.jpg"
+                      alt="Talk to me"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.5 }}>
-                    "{summary.spokenScript}"
-                  </p>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E293B', marginTop: '8px' }}>
+                    Talk to me
+                  </span>
                 </div>
 
-                {/* Recommended First Action */}
-                <div style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{ fontSize: '0.72rem', color: '#FCA5A5', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Recommended Immediate Action
+                {/* Card 3: Help me */}
+                <div
+                  onClick={() => handleSelectCard('help')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    border: '1px solid #E2E8F0',
+                    padding: '16px 12px 14px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center',
+                    minHeight: '190px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#94A3B8';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.03)';
+                  }}
+                >
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    borderRadius: '12px'
+                  }}>
+                    <img
+                      src="/assets/help_me.jpg"
+                      alt="Help me"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: '#F8FAFC', fontWeight: 600, marginTop: '4px' }}>
-                    {summary.recommendedFirstAction}
-                  </p>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E293B', marginTop: '8px' }}>
+                    Help me
+                  </span>
                 </div>
 
-                {/* Prioritized Items List */}
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                  Urgency Prioritized Queue:
+                {/* Card 4: Teach me */}
+                <div
+                  onClick={() => handleSelectCard('teach')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    border: '1px solid #E2E8F0',
+                    padding: '16px 12px 14px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center',
+                    minHeight: '190px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#94A3B8';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2E8F0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.03)';
+                  }}
+                >
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    borderRadius: '12px'
+                  }}>
+                    <img
+                      src="/assets/teach_me.jpg"
+                      alt="Teach me"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E293B', marginTop: '8px' }}>
+                    Teach me
+                  </span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {summary.prioritizedItems.map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className="glass-panel"
-                      style={{ padding: '10px 12px', borderLeft: `3px solid ${item.urgency === 'CRITICAL' ? 'var(--accent-rose)' : item.urgency === 'HIGH' ? 'var(--accent-amber)' : 'var(--accent-cyan)'}` }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#F8FAFC' }}>
-                          #{idx + 1} {item.title}
-                        </span>
-                        <span className={`badge ${item.urgency === 'CRITICAL' ? 'badge-critical' : item.urgency === 'HIGH' ? 'badge-high' : 'badge-medium'}`}>
-                          {item.urgency}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-cyan)', marginTop: '4px' }}>
-                        👉 {item.recommendedAction}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '30px' }}>
-                <button onClick={() => fetchSummary()} className="btn-primary">
-                  <Sparkles size={16} />
-                  <span>Generate Summary</span>
-                </button>
               </div>
             )}
-          </div>
-        )}
 
-        {/* ===================== TAB: TALK TO ME (SSE STREAMING CHAT) ===================== */}
-        {activeTab === 'chat' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Messages Scroll Area */}
-            <div
-              ref={chatScrollRef}
-              style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '12px' }}
-            >
-              {chatMessages.map(msg => (
-                <div
-                  key={msg.id}
-                  style={{
-                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '85%',
-                    backgroundColor: msg.role === 'user' ? 'rgba(0, 180, 216, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                    border: `1px solid ${msg.role === 'user' ? 'rgba(0, 240, 255, 0.4)' : 'var(--border-subtle)'}`,
-                    borderRadius: 'var(--radius-md)',
-                    padding: '10px 14px',
-                    fontSize: '0.85rem',
-                    color: '#F8FAFC',
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-line'
-                  }}
-                >
-                  {msg.content}
-                </div>
-              ))}
-
-              {/* Token Streaming View */}
-              {isStreaming && (
-                <div style={{
-                  alignSelf: 'flex-start',
-                  maxWidth: '85%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid var(--accent-cyan)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '10px 14px',
-                  fontSize: '0.85rem',
-                  color: '#F8FAFC',
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-line'
-                }}>
-                  {streamingTokenBuffer || 'Reasoning...'}
-                  <span className="streaming-cursor" />
-                </div>
-              )}
-            </div>
-
-            {/* Quick Prompt Chips */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '6px 0', borderTop: '1px solid var(--border-subtle)' }}>
-              {[
-                "Which of these needs my attention first and why?",
-                "Inspect Level 2 Drone Patrol Video",
-                "Can I approve the sensor specs?"
-              ].map((chip, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setChatInput(chip);
-                    sendChatMessage(chip);
-                  }}
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid var(--border-subtle)',
-                    color: 'var(--text-secondary)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '4px 10px',
-                    fontSize: '0.72rem',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-
-            {/* Chat Input Form */}
-            <form onSubmit={handleSendChat} style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <input
-                type="text"
-                placeholder="Ask about approvals queue..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                disabled={isStreaming}
-                style={{
-                  flex: 1,
-                  backgroundColor: 'var(--bg-input)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '8px 12px',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.85rem',
-                  outline: 'none'
-                }}
-              />
-              <button
-                type="submit"
-                disabled={!chatInput.trim() || isStreaming}
-                className="btn-primary"
-                style={{ padding: '8px 12px' }}
-              >
-                <Send size={15} />
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* ===================== TAB: HELP ME (RAG GROUNDED Q&A) ===================== */}
-        {activeTab === 'help' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Search Box */}
-            <form onSubmit={handleAskHelp} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-              <input
-                type="text"
-                placeholder="Ask operational policy question (e.g. drone altitude limit)..."
-                value={helpInput}
-                onChange={(e) => setHelpInput(e.target.value)}
-                style={{
-                  flex: 1,
-                  backgroundColor: 'var(--bg-input)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '8px 12px',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.85rem',
-                  outline: 'none'
-                }}
-              />
-              <button type="submit" disabled={!helpInput.trim() || isLoadingHelp} className="btn-primary">
-                {isLoadingHelp ? <Sparkles size={15} className="animate-spin" /> : <HelpCircle size={15} />}
-              </button>
-            </form>
-
-            {/* Quick Policy Questions */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '14px' }}>
-              {[
-                "What is max altitude for drone patrols?",
-                "What is sensor drift tolerance?",
-                "Who verifies Zone 4 spatial layouts?",
-                "What happens after 48h unreviewed?"
-              ].map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => askHelpQuestion(q)}
-                  style={{
-                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-                    border: '1px solid rgba(245, 158, 11, 0.25)',
-                    color: '#FCD34D',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '3px 8px',
-                    fontSize: '0.7rem',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-
-            {/* Grounded Results List */}
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {helpEntries.map(entry => (
-                <div key={entry.id} className="glass-panel" style={{ padding: '14px' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#F8FAFC', marginBottom: '8px' }}>
-                    Q: {entry.query}
+            {/* ==================== INNER VIEW: SUMMARY ==================== */}
+            {activeTab === 'summary' && (
+              <div style={{ padding: '16px' }}>
+                {isLoadingSummary ? (
+                  <div style={{ textAlign: 'center', padding: '40px 10px', color: '#64748B' }}>
+                    <Sparkles size={24} className="animate-spin" color="#0284C7" />
+                    <p style={{ marginTop: '10px', fontSize: '0.85rem' }}>Synthesizing structured urgency summary...</p>
                   </div>
+                ) : summary ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Fallback Banner */}
+                    {summary.degraded && (
+                      <div style={{
+                        backgroundColor: '#FEF3C7',
+                        border: '1px solid #FCD34D',
+                        borderRadius: '10px',
+                        padding: '10px 12px',
+                        fontSize: '0.75rem',
+                        color: '#92400E',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div><strong>Fallback Mode Active:</strong> {summary.fallbackReason}</div>
+                      </div>
+                    )}
 
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '10px' }}>
-                    {entry.answer}
-                  </p>
+                    {/* Headline Card */}
+                    <div style={{
+                      backgroundColor: '#EFF6FF',
+                      border: '1px solid #BFDBFE',
+                      borderRadius: '12px',
+                      padding: '14px'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1D4ED8', textTransform: 'uppercase' }}>
+                        Operational Overview
+                      </div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', marginTop: '4px' }}>
+                        {summary.headline}
+                      </div>
+                    </div>
 
-                  {/* Citations Chips */}
-                  {entry.citations.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                      {entry.citations.map(c => (
-                        <span
-                          key={c.code}
+                    {/* Spoken Script / TTS Audio Player */}
+                    <div style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                          Spoken Audio Summary
+                        </span>
+                        <button
+                          onClick={() => toggleSpeech(summary.spokenScript)}
                           style={{
-                            backgroundColor: 'rgba(0, 240, 255, 0.1)',
-                            border: '1px solid rgba(0, 240, 255, 0.3)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '2px 6px',
-                            fontSize: '0.68rem',
-                            color: 'var(--accent-cyan)',
-                            fontWeight: 600
+                            backgroundColor: isSpeaking ? '#EFF6FF' : '#F1F5F9',
+                            color: isSpeaking ? '#2563EB' : '#475569',
+                            border: '1px solid #CBD5E1',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer'
                           }}
                         >
-                          📜 [{c.code}] {c.title}
-                        </span>
-                      ))}
+                          {isSpeaking ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                          <span>{isSpeaking ? 'Stop Audio' : 'Play Audio'}</span>
+                        </button>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: '#475569', fontStyle: 'italic', lineHeight: 1.5 }}>
+                        "{summary.spokenScript}"
+                      </p>
+                    </div>
+
+                    {/* Recommended Immediate Action */}
+                    <div style={{
+                      backgroundColor: '#FEF2F2',
+                      border: '1px solid #FECACA',
+                      borderRadius: '12px',
+                      padding: '12px'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#DC2626', textTransform: 'uppercase' }}>
+                        Recommended Immediate Gate Check
+                      </div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#991B1B', marginTop: '4px' }}>
+                        {summary.recommendedFirstAction}
+                      </div>
+                    </div>
+
+                    {/* Item Breakdown List */}
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                      Prioritized Items:
+                    </div>
+                    {summary.prioritizedItems.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #E2E8F0',
+                          borderLeft: `4px solid ${item.urgency === 'CRITICAL' ? '#EF4444' : item.urgency === 'HIGH' ? '#F59E0B' : '#0284C7'}`,
+                          borderRadius: '8px',
+                          padding: '10px 12px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#1E293B' }}>
+                            #{idx + 1} {item.title}
+                          </span>
+                          <span style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: item.urgency === 'CRITICAL' ? '#FEE2E2' : item.urgency === 'HIGH' ? '#FEF3C7' : '#E0F2FE',
+                            color: item.urgency === 'CRITICAL' ? '#B91C1C' : item.urgency === 'HIGH' ? '#B45309' : '#0369A1'
+                          }}>
+                            {item.urgency}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#0369A1', marginTop: '4px' }}>
+                          👉 {item.recommendedAction}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <button onClick={() => fetchSummary()} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                    Generate Summary
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ==================== INNER VIEW: TALK TO ME ==================== */}
+            {activeTab === 'chat' && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '14px' }}>
+                <div
+                  ref={chatScrollRef}
+                  style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingBottom: '10px' }}
+                >
+                  {chatMessages.map(msg => (
+                    <div
+                      key={msg.id}
+                      style={{
+                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: '85%',
+                        backgroundColor: msg.role === 'user' ? '#0C1838' : '#FFFFFF',
+                        color: msg.role === 'user' ? '#FFFFFF' : '#1E293B',
+                        border: msg.role === 'user' ? 'none' : '1px solid #E2E8F0',
+                        borderRadius: '12px',
+                        padding: '10px 14px',
+                        fontSize: '0.82rem',
+                        lineHeight: 1.5,
+                        whiteSpace: 'pre-line',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  ))}
+
+                  {/* Token Streaming View */}
+                  {isStreaming && (
+                    <div style={{
+                      alignSelf: 'flex-start',
+                      maxWidth: '85%',
+                      backgroundColor: '#FFFFFF',
+                      color: '#1E293B',
+                      border: '1px solid #38BDF8',
+                      borderRadius: '12px',
+                      padding: '10px 14px',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-line',
+                      boxShadow: '0 1px 4px rgba(56, 189, 248, 0.2)'
+                    }}>
+                      {streamingTokenBuffer || 'Reasoning...'}
+                      <span className="streaming-cursor" style={{ backgroundColor: '#0284C7' }} />
                     </div>
                   )}
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    <span>Confidence: <strong>{entry.confidence}</strong></span>
-                    <span>{entry.groundedInDocument ? '✅ Grounded in SOP-101-105' : '⚠️ Ungrounded / General'}</span>
-                  </div>
                 </div>
-              ))}
 
-              {helpEntries.length === 0 && !isLoadingHelp && (
-                <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                  Ask any question regarding SOP compliance, turnaround SLAs, drone altitude ceilings, or sensor drift thresholds.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ===================== TAB: TEACH ME (STEP-BY-STEP OPERATOR WALKTHROUGH) ===================== */}
-        {activeTab === 'teach' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {currentTeachStep ? (
-              <div style={{ flex: 1, overflowY: 'auto' }}>
-                {/* Step Progress Dots */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                  {[1, 2, 3, 4].map(num => (
+                {/* Prompt Suggestions */}
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '6px 0' }}>
+                  {[
+                    "Which of these needs my attention first and why?",
+                    "Inspect Level 2 Drone Video",
+                    "Can I approve sensor specs?"
+                  ].map((chip, idx) => (
                     <button
-                      key={num}
-                      onClick={() => fetchTeachStep(num)}
+                      key={idx}
+                      onClick={() => {
+                        setChatInput(chip);
+                        sendChatMessage(chip);
+                      }}
                       style={{
-                        flex: 1,
-                        margin: '0 3px',
-                        padding: '6px 0',
-                        borderRadius: 'var(--radius-sm)',
-                        backgroundColor: currentTeachStep.stepNumber === num ? 'var(--accent-cyan)' : currentTeachStep.stepNumber > num ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                        color: currentTeachStep.stepNumber === num ? '#000' : currentTeachStep.stepNumber > num ? '#10B981' : 'var(--text-muted)',
-                        border: 'none',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #CBD5E1',
+                        color: '#475569',
+                        borderRadius: '9999px',
+                        padding: '4px 10px',
                         fontSize: '0.72rem',
-                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
                         cursor: 'pointer'
                       }}
                     >
-                      Step {num}
+                      {chip}
                     </button>
                   ))}
                 </div>
 
-                {/* Step Instruction Card */}
-                <div className="glass-panel" style={{ padding: '14px', marginBottom: '14px' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Operator Onboarding Training
-                  </div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#F8FAFC', marginTop: '4px' }}>
-                    {currentTeachStep.stepTitle}
-                  </h3>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: '8px' }}>
-                    {currentTeachStep.instruction}
-                  </p>
-
-                  {/* UI Target Affordance */}
-                  <div style={{
-                    backgroundColor: 'rgba(0, 240, 255, 0.05)',
-                    border: '1px dashed var(--accent-cyan)',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.75rem',
-                    color: 'var(--accent-cyan)',
-                    marginTop: '12px'
-                  }}>
-                    🎯 <strong>UI Target:</strong> {currentTeachStep.uiTargetElement}
-                  </div>
-                </div>
-
-                {/* Verification Checklist */}
-                <div style={{ marginBottom: '14px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Verification Checkpoints:
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {currentTeachStep.checklistVerification.map((check, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--text-primary)' }}>
-                        <CheckCircle size={14} color="var(--accent-emerald)" />
-                        <span>{check}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Adapted Follow-up Explanations History */}
-                {teachFollowUps.length > 0 && (
-                  <div style={{ marginBottom: '14px' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-cyan)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Adapted Follow-ups:
-                    </div>
-                    {teachFollowUps.map((fu, idx) => (
-                      <div key={idx} style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '6px' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#F8FAFC' }}>Q: {fu.question}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{fu.answer}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Navigation Button */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                  <button
-                    onClick={() => {
-                      if (currentTeachStep.stepNumber < 4) {
-                        fetchTeachStep(currentTeachStep.stepNumber + 1);
-                      } else {
-                        fetchTeachStep(1);
-                      }
+                {/* Input Form */}
+                <form onSubmit={handleSendChat} style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  <input
+                    type="text"
+                    placeholder="Ask about approvals queue..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    disabled={isStreaming}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: '#0F172A',
+                      fontSize: '0.82rem',
+                      outline: 'none'
                     }}
-                    className="btn-primary"
-                    style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim() || isStreaming}
+                    style={{
+                      backgroundColor: '#0C1838',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
                   >
-                    <span>{currentTeachStep.stepNumber < 4 ? 'Next Step' : 'Restart Walkthrough'}</span>
-                    <ArrowRight size={14} />
+                    <Send size={14} />
                   </button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px 10px' }}>
-                <button onClick={() => fetchTeachStep(1)} className="btn-primary">
-                  <GraduationCap size={16} />
-                  <span>Start Operator Tutorial</span>
-                </button>
+                </form>
               </div>
             )}
 
-            {/* Follow-up question bar */}
-            <form onSubmit={handleTeachFollowUp} style={{ display: 'flex', gap: '8px', marginTop: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
-              <input
-                type="text"
-                placeholder="Ask follow-up question (adapts explanation)..."
-                value={teachQuestion}
-                onChange={(e) => setTeachQuestion(e.target.value)}
-                disabled={isLoadingTeach}
-                style={{
-                  flex: 1,
-                  backgroundColor: 'var(--bg-input)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '8px 12px',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.8rem',
-                  outline: 'none'
-                }}
-              />
-              <button type="submit" disabled={!teachQuestion.trim() || isLoadingTeach} className="btn-ghost" style={{ padding: '8px 12px' }}>
-                <Send size={14} />
-              </button>
-            </form>
+            {/* ==================== INNER VIEW: HELP ME ==================== */}
+            {activeTab === 'help' && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '14px' }}>
+                <form onSubmit={handleAskHelp} style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder="Ask operational policy question (e.g. drone altitude limit)..."
+                    value={helpInput}
+                    onChange={(e) => setHelpInput(e.target.value)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: '#0F172A',
+                      fontSize: '0.82rem',
+                      outline: 'none'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!helpInput.trim() || isLoadingHelp}
+                    style={{
+                      backgroundColor: '#0C1838',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isLoadingHelp ? <Sparkles size={14} className="animate-spin" /> : <HelpCircle size={14} />}
+                  </button>
+                </form>
+
+                {/* Quick Policy Questions */}
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '12px' }}>
+                  {[
+                    "What is max altitude for drone patrols?",
+                    "What is sensor drift tolerance?",
+                    "Who verifies Zone 4 spatial layouts?",
+                    "What happens after 48h unreviewed?"
+                  ].map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => askHelpQuestion(q)}
+                      style={{
+                        backgroundColor: '#FEF3C7',
+                        border: '1px solid #FCD34D',
+                        color: '#92400E',
+                        borderRadius: '9999px',
+                        padding: '3px 8px',
+                        fontSize: '0.7rem',
+                        whiteSpace: 'nowrap',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Results List */}
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {helpEntries.map(entry => (
+                    <div key={entry.id} style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>
+                        Q: {entry.query}
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5, marginBottom: '8px' }}>
+                        {entry.answer}
+                      </p>
+                      {entry.citations.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {entry.citations.map(c => (
+                            <span key={c.code} style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', color: '#1D4ED8', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600 }}>
+                              📜 [{c.code}] {c.title}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {helpEntries.length === 0 && !isLoadingHelp && (
+                    <div style={{ textAlign: 'center', padding: '30px 10px', color: '#94A3B8', fontSize: '0.8rem' }}>
+                      Ask any question regarding SOP compliance, turnaround SLAs, drone altitude ceilings, or sensor drift thresholds.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ==================== INNER VIEW: TEACH ME ==================== */}
+            {activeTab === 'teach' && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '14px' }}>
+                {currentTeachStep ? (
+                  <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {/* Step Dots */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                      {[1, 2, 3, 4].map(num => (
+                        <button
+                          key={num}
+                          onClick={() => fetchTeachStep(num)}
+                          style={{
+                            flex: 1,
+                            padding: '6px 0',
+                            borderRadius: '6px',
+                            backgroundColor: currentTeachStep.stepNumber === num ? '#0C1838' : currentTeachStep.stepNumber > num ? '#D1FAE5' : '#E2E8F0',
+                            color: currentTeachStep.stepNumber === num ? '#FFFFFF' : currentTeachStep.stepNumber > num ? '#065F46' : '#64748B',
+                            border: 'none',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Step {num}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0284C7', textTransform: 'uppercase' }}>
+                        Operator Walkthrough
+                      </div>
+                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', marginTop: '2px' }}>
+                        {currentTeachStep.stepTitle}
+                      </h4>
+                      <p style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5, marginTop: '6px' }}>
+                        {currentTeachStep.instruction}
+                      </p>
+
+                      <div style={{
+                        backgroundColor: '#F0F9FF',
+                        border: '1px dashed #0284C7',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        color: '#0369A1',
+                        marginTop: '10px'
+                      }}>
+                        🎯 <strong>UI Target:</strong> {currentTeachStep.uiTargetElement}
+                      </div>
+                    </div>
+
+                    {/* Verification Checklist */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Checklist Verification:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {currentTeachStep.checklistVerification.map((check, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#334155' }}>
+                            <CheckCircle size={13} color="#059669" />
+                            <span>{check}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Follow-up adaptations history */}
+                    {teachFollowUps.length > 0 && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0284C7', textTransform: 'uppercase', marginBottom: '4px' }}>
+                          Adapted Follow-ups:
+                        </div>
+                        {teachFollowUps.map((fu, idx) => (
+                          <div key={idx} style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '6px 10px', borderRadius: '6px', marginBottom: '4px' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1E293B' }}>Q: {fu.question}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '2px' }}>{fu.answer}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                      <button
+                        onClick={() => {
+                          if (currentTeachStep.stepNumber < 4) {
+                            fetchTeachStep(currentTeachStep.stepNumber + 1);
+                          } else {
+                            fetchTeachStep(1);
+                          }
+                        }}
+                        style={{
+                          backgroundColor: '#0C1838',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '6px 14px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <span>{currentTeachStep.stepNumber < 4 ? 'Next Step' : 'Restart Walkthrough'}</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => fetchTeachStep(1)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                    Start Operator Tutorial
+                  </button>
+                )}
+
+                {/* Follow-up question form */}
+                <form onSubmit={handleTeachFollowUp} style={{ display: 'flex', gap: '8px', marginTop: '10px', borderTop: '1px solid #E2E8F0', paddingTop: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Ask follow-up question (adapts explanation)..."
+                    value={teachQuestion}
+                    onChange={(e) => setTeachQuestion(e.target.value)}
+                    disabled={isLoadingTeach}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: '#0F172A',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }}
+                  />
+                  <button type="submit" disabled={!teachQuestion.trim() || isLoadingTeach} style={{ backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer' }}>
+                    <Send size={13} color="#475569" />
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* 4. Footer Bar (Matching Screenshot: 26 folders / items & HMS Panel ↗) */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderTop: '1px solid #E2E8F0',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.75rem',
+            color: '#64748B'
+          }}>
+            <span>{queue.length} folders / items</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <a
+                href="#hms-panel"
+                onClick={(e) => { e.preventDefault(); }}
+                style={{
+                  color: '#475569',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontWeight: 600
+                }}
+              >
+                <span>HMS Panel</span>
+                <ExternalLink size={12} />
+              </a>
+
+              {/* Diagonal resize corner grip lines */}
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRight: '2px solid #CBD5E1',
+                borderBottom: '2px solid #CBD5E1',
+                cursor: 'se-resize'
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

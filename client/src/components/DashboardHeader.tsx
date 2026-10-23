@@ -209,6 +209,27 @@ export const DashboardHeader: React.FC = () => {
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Lead Inspector</div>
           </div>
         </div>
+
+        {/* + Add help button matching reference product screenshot */}
+        <button
+          style={{
+            background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: 'var(--radius-full)',
+            padding: '6px 14px',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)'
+          }}
+          title="Add Operational SOP Knowledge Note"
+        >
+          <span>+ Add help</span>
+        </button>
       </div>
     </header>
   );
