@@ -1,0 +1,54 @@
+[
+  {
+    "id": "appr-001",
+    "item": "Site Patrol Onboarding & Checklists",
+    "type": "Folder",
+    "submittedBy": "Sam HelpAdmin",
+    "submittedAt": "2026-09-18",
+    "status": "Pending Review",
+    "urgency": "HIGH",
+    "summary": "Mandatory safety checklist and operator onboarding flow for perimeter patrol shift changeover. Blocks patrol deployment if unapproved.",
+    "riskLevel": "Medium-High",
+    "details": "Contains 14 procedural checklists, hazardous zone inspection logs, and supervisor signoff forms.",
+    "suggestedAction": "Review checklist items 1-8 for OSHA compliance and verify shift supervisor signature."
+  },
+  {
+    "id": "appr-002",
+    "item": "Level 2 Drone Patrol Video Demo",
+    "type": "Video",
+    "submittedBy": "Alex HelpAdmin",
+    "submittedAt": "2026-09-18",
+    "status": "Pending Review",
+    "urgency": "CRITICAL",
+    "summary": "Full autonomous drone perimeter test flight video with LiDAR point cloud overlay across Zone 4 perimeter.",
+    "riskLevel": "Critical",
+    "details": "Flight logs show altitude anomaly near sub-station radar tower at timestamp 03:42. Requires verification against SOP-102 geofence limits.",
+    "suggestedAction": "Verify waypoint altitudes are below 120m AGL and confirm collision-avoidance telemetry matches video."
+  },
+  {
+    "id": "appr-003",
+    "item": "Safety Equipment & Sensor Specs",
+    "type": "PDF",
+    "submittedBy": "Sam HelpAdmin",
+    "submittedAt": "2026-09-18",
+    "status": "Pending Review",
+    "urgency": "MEDIUM",
+    "summary": "Technical specification document for newly installed infrared thermal and methane gas detectors across chemical storage bays.",
+    "riskLevel": "Medium",
+    "details": "Sensor drift tolerance is documented at 1.2%, which is within acceptable 1.5% margin per SOP-103.",
+    "suggestedAction": "Verify calibration curves match ISO 14001 specifications and sign off for active telemetry feed."
+  },
+  {
+    "id": "appr-004",
+    "item": "360° Spatial Zone Layout & Camera Map",
+    "type": "Image",
+    "submittedBy": "Elena HelpAdmin",
+    "submittedAt": "2026-09-18",
+    "status": "Pending Review",
+    "urgency": "HIGH",
+    "summary": "Updated optical and thermal camera coverage blueprint for Zone 4 digital-twin spatial reconstruction.",
+    "riskLevel": "High",
+    "details": "Elena noted potential 15° blindspot behind North Warehouse container stack. Requires dual-operator verification before commit.",
+    "suggestedAction": "Confirm overlap coverage with secondary PTZ dome camera #12 or request supplementary coverage sensor."
+  }
+]

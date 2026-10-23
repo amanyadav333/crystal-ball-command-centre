@@ -1,0 +1,258 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OomniEye Approvals Assistant AI API",
+    "version": "1.0.0",
+    "description": "API contract for OomniEye Digital-Twin Approvals Assistant (Wave 2 Technical Take-Home)"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/greeting": {
+      "post": {
+        "summary": "Replay Greeting — context-aware greeting referencing pending queue state",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operatorName": { "type": "string", "default": "Operator" },
+                  "language": { "type": "string", "default": "English" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contextual greeting generated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GreetingResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/summary": {
+      "post": {
+        "summary": "Present me Summary — structured summary of pending approvals prioritized by urgency",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": { "type": "string", "default": "English" },
+                  "operatorRole": { "type": "string", "default": "Command Operator" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured summary validated with Zod",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SummaryResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat": {
+      "post": {
+        "summary": "Talk to me — multi-turn streaming conversation about the approvals queue",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["messages"],
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+                        "content": { "type": "string" }
+                      }
+                    }
+                  },
+                  "activeItemId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events (SSE) token stream (`text/event-stream`)"
+          }
+        }
+      }
+    },
+    "/help": {
+      "post": {
+        "summary": "Help me — answers operational question grounded in SOP policy document (RAG surface)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query"],
+                "properties": {
+                  "query": { "type": "string" },
+                  "activeItemId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Grounded answer with citations and confidence score",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HelpResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teach": {
+      "post": {
+        "summary": "Teach me — step-by-step interactive operator walkthrough with follow-up support",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stepNumber": { "type": "integer", "minimum": 1, "maximum": 5, "default": 1 },
+                  "userFollowUp": { "type": "string" },
+                  "targetItemId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Step instruction and interactive checkpoint",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TeachResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue": {
+      "get": {
+        "summary": "Get all current approval queue items",
+        "responses": {
+          "200": { "description": "Array of approval items" }
+        }
+      }
+    },
+    "/queue/{id}": {
+      "patch": {
+        "summary": "Update approval item status (Approve / Reject)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["Approved", "Rejected"] },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated item" },
+          "404": { "description": "Item not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SummaryResponse": {
+        "type": "object",
+        "required": ["headline", "spokenScript", "totalPending", "criticalCount", "highCount", "prioritizedItems", "recommendedFirstAction", "generatedAt", "degraded"],
+        "properties": {
+          "headline": { "type": "string" },
+          "spokenScript": { "type": "string" },
+          "totalPending": { "type": "number" },
+          "criticalCount": { "type": "number" },
+          "highCount": { "type": "number" },
+          "prioritizedItems": { "type": "array" },
+          "recommendedFirstAction": { "type": "string" },
+          "generatedAt": { "type": "string" },
+          "degraded": { "type": "boolean" },
+          "fallbackReason": { "type": "string" }
+        }
+      },
+      "HelpResponse": {
+        "type": "object",
+        "required": ["answer", "citations", "confidence", "groundedInDocument", "degraded"],
+        "properties": {
+          "answer": { "type": "string" },
+          "citations": { "type": "array" },
+          "confidence": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
+          "groundedInDocument": { "type": "boolean" },
+          "degraded": { "type": "boolean" },
+          "fallbackReason": { "type": "string" }
+        }
+      },
+      "TeachResponse": {
+        "type": "object",
+        "required": ["step", "isCompleted", "degraded"],
+        "properties": {
+          "step": { "type": "object" },
+          "followUpAnswer": { "type": "string" },
+          "adaptedExplanation": { "type": "string" },
+          "isCompleted": { "type": "boolean" },
+          "degraded": { "type": "boolean" }
+        }
+      },
+      "GreetingResponse": {
+        "type": "object",
+        "required": ["greeting", "queueContext", "pendingCount", "urgentCount", "timestamp", "degraded"],
+        "properties": {
+          "greeting": { "type": "string" },
+          "queueContext": { "type": "string" },
+          "pendingCount": { "type": "number" },
+          "urgentCount": { "type": "number" },
+          "timestamp": { "type": "string" },
+          "degraded": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

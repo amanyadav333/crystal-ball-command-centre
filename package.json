@@ -1,0 +1,17 @@
+{
+  "name": "crystal-ball-command-centre",
+  "version": "1.0.0",
+  "description": "OomniEye Approvals Assistant - MERN + AI Wave 2 Take-Home Project",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "test": "npm --prefix server test && npm --prefix client test",
+    "test:server": "npm --prefix server test",
+    "test:client": "npm --prefix client test",
+    "build": "npm --prefix server run build && npm --prefix client run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.5"
+  }
+}
