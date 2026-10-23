@@ -135,3 +135,55 @@ In the dashboard top navbar, reviewers can test failure resilience with one clic
 - **`Simulate Timeout`**: Forces server AI handlers to hit the 8-second threshold and verify graceful degradation.
 - **`Simulate LLM Down`**: Simulates provider 503 failure / missing API key.
 - **`Reset Queue`**: Restores the mock queue to initial seed state.
+
+---
+
+## 7. AI Provider Health, Quota (429) & Graceful Degradation Handling
+
+### The OpenAI Quota Error (`HTTP 429 credit_balance_exhausted`)
+When connecting an OpenAI API key that has consumed all prepaid billing credits or hit organization rate limits, OpenAI returns:
+```json
+{
+  "error": {
+    "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+    "type": "insufficient_quota",
+    "param": null,
+    "code": "credit_balance_exhausted"
+  }
+}
+```
+
+### How the Engine Handles Quota 429 (Zero Downtime Guarantee)
+Per **Section 3 & Section 6 of the assignment requirements**, external API failures must **never** result in raw 500 errors, broken JSON, or frozen client UIs:
+
+1. **Error Interception:** `llmService.ts` catches the `429 Too Many Requests` response from OpenAI.
+2. **Schema-Compliant Fallback:** Instead of throwing an unhandled exception, the engine activates deterministic heuristic reasoning. All responses strictly adhere to the Zod contracts defined in `server/src/contracts/schemas.ts`.
+3. **Transparency Flags:** Every response payload includes:
+   ```json
+   {
+     "degraded": true,
+     "fallbackReason": "LLM call failed: OpenAI API error: 429 Too Many Requests"
+   }
+   ```
+4. **Visual UI Indicator:** 
+   - An amber alert banner (`⚡ Fallback Mode Active — LLM call failed: OpenAI API error: 429 Too Many Requests`) appears inside the Assistant panel.
+   - The top navigation bar displays `⚠️ OpenAI: Quota 429 (Fallback Active)`.
+
+### How to Check AI Connection Status
+
+| Method | Where | What You See |
+| :--- | :--- | :--- |
+| **1. Header Badge** | Top navigation bar (next to notifications) | Clickable pill showing `🟢 OpenAI: Connected` or `⚠️ OpenAI: Quota 429 (Fallback Active)`. Clicking it opens the **Live AI Diagnostic Modal**. |
+| **2. Diagnostic API** | `GET http://localhost:5000/api/ai-status` | Real-time JSON probe querying OpenAI directly: returns status code, error code, and active fallback status. |
+| **3. Assistant Panel** | Inside "Present me Summary", "Talk to me", etc. | Real-time amber banner showing active degradation reason if quota is exhausted. |
+
+### How to Resolve the Quota Error
+1. **Fund the OpenAI Account:** Add credits ($1–$5) at [OpenAI Billing Settings](https://platform.openai.com/settings/organization/billing/).
+2. **Update `.env`:** Place your funded API key into `server/.env`:
+   ```env
+   OPENAI_API_KEY=sk-proj-your-active-key
+   OPENAI_MODEL=gpt-4o-mini
+   ```
+3. **Verify:** Open the dashboard and click **"Re-check Connection"** in the diagnostic modal. The pill will immediately switch to `🟢 OpenAI: Connected`.
+4. **Alternative Providers Supported:** You can also configure `ANTHROPIC_API_KEY` (Claude 3.5 Sonnet) or `GEMINI_API_KEY` (Gemini 1.5 Flash) in `server/.env`.
+
